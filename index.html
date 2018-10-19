@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>命题逻辑公式求解</h1>
+<p>制作人：裴展</p>
+
+<textarea rows="20" id="textIn" cols="100">输入逻辑表达式...</textarea>
+<p></p>
+<button id="bnt1" onclick="f1">判断公式可满足</button>
+<button id="bnt2" onclick="f2()">判断完全</button>
+<p id="textOut">this is 结果</p>
+
+
+<script>
+    //定义栈
+    (function(root) {
+        function Stack() {
+            this.dataStore = [];
+            //数组的元素个数
+            this.top = 0;
+        }
+
+        Stack.prototype = {
+            pop: function() {
+                //出栈时，主要使用前减运算，返回栈顶元素，元素个数减一
+                return this.dataStore[--this.top];
+            },
+            push: function(elem) {
+                //入栈时，使用后加运算符，先在栈顶添加元素，元素个数加一
+                this.dataStore[this.top++] = elem;
+            },
+            peek: function() {
+                if(this.top > 0)    return this.dataStore[this.top-1];
+                else   return null;
+            },
+            clear: function() {
+                //当清空栈时，访问栈顶的结果为undefined
+                this.top = 0;
+            },
+            length: function() {
+                return this.top;
+            }
+        }
+
+        root.Stack = Stack;
+
+    })(global);
+
+    // 判断公式可满足
+    function f1() {
+        const inputStr = document.getElementById("textIn").value.toString().trim();
+        console.log(inputStr);
+        // checkString(inputStr)
+    }
+    //判断完全
+    function f2() {
+        const input = document.getElementById("textIn").value.toString().trim();
+        console.log(input);
+    }
+    //进行语法检查
+    function checkString(str) {
+        var backStr = str;
+        var flag = true;
+        for(var i=0 ; i<str.length && flag ; i++) {
+            if(str[i]==='%'){
+                //注释后面自动忽略
+                break;
+            }else if (str[i]==='#'){
+                //判断函数定义准确度，注意需要把函数记下来
+                flag = checkDef(str.substring(i, str.length-1));
+                break;
+            }else if (str[i]==='¬'){
+                //符号非，后面必须是变量或者括号
+                flag = (str[i + 1] === '(') || (str[i + 1] === '0') || (str[i + 1] === '1') || (str[i + 1] >= 'a' && str[i] <= 'z') || (str[i + 1] >= 'A' && str[i + 1] <= 'Z');
+            }else if ((str[i]>='a'&&str[i]<='z')||(str[i]>='A'&&str[i]<='Z')||(str[i]==='0')||(str[i]==='1')){
+                //抽取变量名，变量名必须是字母+数字，且首字符不能是数字。0,1 需特殊考虑。注意需要把变量记下来。
+                var tmp = str[i];
+                i++;
+                while((str[i]>='a'&&str[i]<='z')||(str[i]>='A'&&str[i]<='Z')||(str[i]==='0')||(str[i]==='1')){
+                    tmp.append(str[i])
+                    i++;
+                }
+                flag = checkName(tmp);
+            }else  if (str[i]==='('){
+                //左括号必须有一个相匹配的右括号
+                var id = str.indexOf(")", i);
+                flag = id > i;
+            }else if ((str[i]==='∧')||(str[i]==='∨')||(str[i]==='→')||(str[i]==='⊕')||(str[i]==='↔'){
+                //判断二元连接符, 需要用到栈
+
+            }else if (str[i]===','){
+                //判断逗号
+
+            }
+        }
+    }
+    //检查连接词定义
+    function checkDef(str) {
+        return true;
+    }
+    //判断变量名是否合法
+    function checkName(str) {
+        return true;
+    }
+
+</script>
+</body>
+</html>
