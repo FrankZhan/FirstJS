@@ -15,43 +15,241 @@
 <p id="textOut">this is 结果</p>
 
 <script>
-    var myPara = new Array();   //map, 把所有变量映射为数组中的元素
-    var myFunc = new Array();   //map, 保存所有函数映射为数组中的元素
-    var myStack = new Array();  //stack, 按顺序保存所有的运算元素
-    var P = new Array();        //变量数组
-    var F = new Array();        //函数数组
-
+    var map_parm = new Array();  //map, 把所有变量映射为数组中的元素
+    var map_func = new Array();  //map, 保存所有函数映射为数组中的元素
+    var main_stack = new Array();  //stack, 按顺序保存所有的运算元素
+    var parm = new Array();     //变量数组
+    var func = new Array();     //函数数组
+    var NumOfFunc = 0;          //函数数量
+    var NumOfParm = 0;          //变量数量
     function init() {
         //初始化全局变量
-        myFunc = [];
-        myPara = [];
-        myStack = [];
-        P = [];
-        F = [];
+        map_func = [];
+        map_parm = [];
+        main_stack = [];
+        parm = [];
+        func = [];
+        NumOfFunc = 0;
+        NumOfParm = 0;
+        output('');
     }
     function checkname(value) {
         //判断命名是否合法：字母和数字且首字母不为数字
         var Regx = /^[A-Za-z0-9]*$/;
-        if (Regx.test(value) && !(value[0]>='0' && value[0]<='9')) {
+        if (Regx.test(value) && !(value[0]>='0'&&value[0]<='9')) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
-
+    function isSymbol(char) {
+        //判断char是否是运算符 ¬,∧,∨,→,⊕,↔, ',', (, )
+        //0, 1当特殊变量使用
+        return char==='¬' || char==='∧' || char==='∨' || char==='→' || char==='⊕' || char==='↔' || char==='(' || char===')' || char===',';
+    }
+    function output(str) {
+        //输出
+        if(str == null){
+            str = 'String is null';
+        }
+        document.getElementById("textOut").innerText=str;
+    }
+    function RightArrow(p, q) {
+        // → 的映射函数
+        var result = [1, 0, 1, 1];
+        var tmp = '' + p + q;
+        return result[parseInt(tmp, 2)]
+    }
+    function DoubleArrow(p, q) {
+        // ↔ 的映射函数
+        var result = [1, 0, 0, 1];
+        var tmp = '' + p + q;
+        return result[parseInt(tmp, 2)]
+    }
+    function XOR(p, q) {
+        // 异或函数
+        var result = [0, 1, 1, 0];
+        var tmp = '' + p + q;
+        return result[parseInt(tmp, 2)]
+    }
     function ifSatisfy() {
+        //判断公式可满足入口
+        init();
+        const str_input = document.getElementById("textIn").value.toString().trim();
+        console.log(str_input);
+        var input = str_input.split('\n');      //默认输入时函数定义和逻辑表达式不在一行，且至多只有一行逻辑表达式
+
+        //逐行进行语法检查
+        for(var i=0; i<input.length; i++){
+            var sentence = input[i];
+            console.log(sentence);
+
+            if(sentence.length === 0 || sentence[0] === '%'){   //如果语句为空或者句首为%
+                break;
+            }else if(sentence[0] === '#'){
+                //定义函数
+                var tmp_stack = sentence.slice(1, sentence.length).split(' ');
+                //删除临时栈中的 空格 和 空对象
+                for(var i=tmp_stack.length-1; i>=0; i--){
+                    if(tmp_stack[i]==='' || tmp_stack[i]===' '){
+                        tmp_stack.splice(i, 1);
+                    }
+                }
+                for(var i=0; i<tmp_stack.length; i+=3){
+                    if(tmp_stack[i] === '%'){
+                        break;
+                    }else{
+                        var num_arg = parseInt(tmp_stack[i+1]);     // 2
+                        var value_func = tmp_stack[i+2];              // '0110'
+                        if(!checkname(tmp_stack[i])){
+                            output(sentence + '\n' + tmp_stack[i] + '命名错误');
+                            return;
+                        }
+                        if(i+2>=tmp_stack.length){
+                            output(sentence + '\n' + tmp_stack[i] + '定义说明不全');
+                            return;
+                        }
+                        if(!(num_arg>=1 && num_arg<=10)){
+                            output(sentence + '\n' + '函数参数数量不正确');
+                            return;
+                        }
+                        if(value_func.length !== 2**num_arg){
+                            output(sentence + '\n' + '函数值不正确');
+                            return;
+                        }
+                        for(var j=0; j<value_func.length; j++){
+                            if(value_func[j]!=='0' && value_func[j]!=='1'){
+                                output(sentence + '\n' + '函数值仅为0或1');
+                                return;
+                            }
+                        }
+                        if(tmp_stack[i] in map_func){
+                            output(sentence + '\n' + '函数重复定义');
+                            return;
+                        }
+                        // 参数无误，定义函数
+                        map_func[tmp_stack[i]] = NumOfFunc++;     // i: 'f', i+1: '2', i+2: '0110'
+                        func[NumOfFunc-1] = function () {
+                            //使用参数、值定义逻辑连接词
+                            //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
+                            var num = a1;
+                            var result = [];
+                            var str = '';
+                            for(var i=0; i<s.length; i++){
+                                result.push(s[i]-'0');
+                            }
+                            for(var i=0; i<num; i++){
+                                str += arguments[i];
+                            }
+                            return result[parseInt(str, 2)];    // 把二进制字符串转换为数字，映射为函数值
+                        }
+                    }
+                }
+            }else{
+                //逻辑表达式
+                //遍历字符串，检查变量名
+                sentence = sentence.replace(/\s+/g, '');    // 去除空格
+                var flag=false;
+                var tmp='';
+                for(var j=0; j<sentence.length ; j++){
+                    if(sentence[j]==='%'){
+                        break;
+                    }
+                    if(isSymbol(sentence[j])){
+                        if(flag){
+                            flag = false;
+                            if((tmp == "0") || tmp == '1' || checkname(tmp)){
+                                main_stack.push(tmp);
+                            }else{
+                                output(sentence.slice(0, j) + '?\n 命名错误')
+                                return
+                            }
+                        }
+                        main_stack.push(sentence[j]);
+                    }else if(j===sentence.length-1){
+                        if(flag){
+                            tmp += sentence[j];
+                        }else{
+                            tmp = sentence[j];
+                        }
+                        if((tmp == "0") || tmp == '1' || checkname(tmp)){
+                            main_stack.push(tmp);
+                        }else{
+                            output(sentence.slice(0, j) + '?\n 命名错误')
+                            return
+                        }
+                    }else{
+                        if(!flag){
+                            flag = true;
+                            tmp = '';
+                        }
+                        tmp += sentence[j];
+                    }
+                }
+
+                //匹配运算符
+                var numL = 0, numR=0; // 左括号和右括号数目
+                for(var j=0; j<main_stack.length; j++){
+                    if(!isSymbol(main_stack[j])){      //变量、函数、0、1必须和运算符挨着。而且 P¬ 和 )P 情况为错误
+                        if((j-1>=0 && main_stack[j-1]===')') || (j+1<main_stack.length && main_stack[j+1]==='¬')){
+                            output(sentence + '\n' + main_stack[j] + '前不能有 ) ，后不能有 ¬ ');
+                        }
+                    }else if(main_stack[j] === '('){   //左括号计数
+                        numL++;
+                    }else if(main_stack[j] === ')'){   //右括号匹配
+                        numR++;
+                        if(numR>numL){
+                            output(sentence + '\n括号不匹配');
+                            return
+                        }
+                        if(main_stack[j-1]==='('){
+                            output(sentence + '\n空括号');
+                            return
+                        }
+                    }else if(main_stack[j]==='¬'){     // !运算符后面必须是变量、函数、0、1或者括号
+                        if(j+1>=main_stack.length){
+                            output(sentence + '\n¬后面不能为空')
+                            return
+                        }
+                        if(j+1<main_stack.length && isSymbol(main_stack[j+1]) && main_stack[j+1]!=='('){
+                            output(sentence + '\n¬ 后面不能是运算符');
+                            return
+                        }
+                    }else {     //二元运算符 ∧,∨,→,⊕,↔, ','; 二元运算符前后必须是变量、常量、函数或者括号
+                        if(j-1<0 || j+1>=main_stack.length || (isSymbol(main_stack[j-1]) && main_stack[j-1]!==')') || (isSymbol(main_stack[j+1]) && main_stack[j+1]!=='(')){
+                            output(sentence + '\n' + main_stack[j] + '必须连接两个个运算元素');
+                            return;
+                        }
+                    }
+                }
+                if(numR!==numL){        //左括号多余
+                    output(sentence + '\n括号不匹配');
+                    return
+                }
+            }
+        }
+        //映射函数、变量、一些运算符 ¬ ∧ ∨
+
+        //检查是否有未定义的函数
+
+        //重构命令
+
+        //遍历各种可能性
+
+    }
+    function ifComplete() {
         //判断公式可满足入口
         init();
         const inputStr = document.getElementById("textIn").value.toString().trim();
         console.log(inputStr);
+        var input = inputStr.split('\n');      //默认输入时函数定义和逻辑表达式不在一行，且至多只有一行逻辑表达式
+        //语法检查
+        for(var sentence in input){
+            console.log(sentence);
+            if(sentence[0] === '#'){        //只需要函数定义表达式，其他忽略
 
-    }
-    function ifComplete() {
-        //判断公式完全入口
-        init();
-        const inputStr = document.getElementById("textIn").value.toString().trim();
-        console.log(inputStr);
+            }
+        }
 
     }
 </script>
