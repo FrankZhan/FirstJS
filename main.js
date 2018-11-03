@@ -237,5 +237,15 @@ function findBackInMain(index) {
     return result+1;       //插入位置在后向元素后面
 }
 
-main_stack = 'f(q,r)↔f(p,q)';
-console.log(findBackInMain(main_stack[main_stack.indexOf('↔')]))
+//遍历各种可能性
+function toBinStr(num, src) {
+    // 把数字src转换为长度为num的二进制字符串
+    var str = src.toString(2);
+    var tmp = num - str.length;
+    for(var i = 0; i<tmp; i++){
+        str = '0'+str;
+    }
+    return str;
+}
+
+console.log(toBinStr(10, 9))
