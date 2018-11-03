@@ -168,11 +168,11 @@ function checkFunc() {
             func[NumOfFunc-1] = function () {
                 //使用参数、值定义逻辑连接词
                 //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
-                var num = a1;
+                var num = num_arg;
                 var result = [];
                 var str = '';
                 for(var i=0; i<s.length; i++){
-                    result.push(s[i]-'0');
+                    result.push(value_func[i]-'0');
                 }
                 for(var i=0; i<num; i++){
                     str += arguments[i];
@@ -182,6 +182,7 @@ function checkFunc() {
         }
     }
 }
+
 function delShuZu() {
     var a = '#  f  2 00d f fd ';
     var b = a.split(' ');
@@ -193,4 +194,48 @@ function delShuZu() {
     }
     console.log(b);
 }
-delShuZu();
+function nestFunc() {
+    f1();
+    for(var i =0; i<5; i++){
+        if(i%2 == 0){
+            function f1() {
+                output( 'i%2==0');
+            }
+            f1();
+        }else {
+            f1();
+            function f2() {
+                output(i + 'i%2!=0');
+            }
+            f2();
+        }
+        output('out: ');
+        f1();
+    }
+    output('over');
+    f1();
+}
+
+function findBackInMain(index) {
+    //替换 →,⊕,↔ 时，后向查找运算符前的元素的位置。 返回的是该插入元素的位置
+    var result = index+1;
+    if(main_stack[result]==='(' || main_stack[result+1]==='('){     //如果运算符后面是 括号 或者 函数
+        var numL = 0, numR = 0;
+        for(var i = result; i<=main_stack.length; i++){
+            if(main_stack[i]==='('){
+                numL++;
+            }
+            if(main_stack[i]===')'){
+                numR++;
+            }
+            if(numL===numR){
+                result = i;
+                break;
+            }
+        }
+    }
+    return result+1;       //插入位置在后向元素后面
+}
+
+main_stack = 'f(q,r)↔f(p,q)';
+console.log(findBackInMain(main_stack[main_stack.indexOf('↔')]))
