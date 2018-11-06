@@ -248,4 +248,15 @@ function toBinStr(num, src) {
     return str;
 }
 
-console.log(toBinStr(10, 9))
+
+
+function f1() {
+    const num = 10;
+    let haha = num+1;
+    console.log(haha);
+    function getNum() {
+        return num;
+    }
+}
+let f = f1();
+console.log(f.getNum());

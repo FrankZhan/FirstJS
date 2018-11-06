@@ -15,367 +15,56 @@
 <p id="textOut">this is 结果</p>
 
 <script>
-    var map_parm = new Array();  //map, 把所有变量映射为数组中的元素
-    var map_func = new Array();  //map, 保存所有函数映射为数组中的元素
-    var map_constant = new Array(); //map, 映射常量
-    var main_stack = new Array();  //stack, 按顺序保存所有的运算元素
-    var parm = new Array();     //array, 变量数组
-    var func = new Array();     //array, 函数数组
-    var NumOfFunc = 0;          //number, 函数数量
-    var NumOfParm = 0;          //number, 变量数量
-    var FinalExpr = '';          //最终JS可执行的逻辑表达式
-    function init() {
-        //初始化全局变量
-        map_func = [];
-        map_parm = [];
-        map_constant = [];
-        main_stack = [];
-        parm = [];
-        func = [];
-        NumOfFunc = 0;
-        NumOfParm = 0;
-        FinalExpr = '';
-        output('');
-    }
-    function checkname(value) {
-        //判断命名是否合法：字母和数字且首字母不为数字
-        var Regx = /^[A-Za-z0-9]*$/;
-        if (Regx.test(value) && !(value[0]>='0'&&value[0]<='9')) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    function isSymbol(char) {
-        //判断char是否是运算符 ¬,∧,∨,→,⊕,↔, ',', (, )
-        //0, 1当特殊变量使用
-        return char==='¬' || char==='∧' || char==='∨' || char==='→' || char==='⊕' || char==='↔' || char==='(' || char===')' || char===',';
+
+    function checkName(value) {
+        /**
+         * 判断命名是否合法：字母和数字且首字母不为数字
+         * */
+        let Regx = /^[A-Za-z0-9]*$/;
+        return Regx.test(value) && !(value[0] >= '0' && value[0] <= '9');
     }
     function output(str) {
-        //输出
+        /**
+         * 输出
+         * */
         if(str == null){
             str = 'String is null';
         }
         document.getElementById("textOut").innerText=str;
     }
-    
-    /**
-     * @return {number}
-     * RightArrow →
-     */
-    function RA(p, q) {
-        // → 的映射函数
-        var result = [1, 0, 1, 1];
-        var tmp = '' + p + q;
-        return result[parseInt(tmp, 2)]
-    }
-
-    /**
-     * @return {number}
-     * DoubleArrow ↔
-     */
-    function DA(p, q) {
-        // ↔ 的映射函数
-        var result = [1, 0, 0, 1];
-        var tmp = '' + p + q;
-        return result[parseInt(tmp, 2)]
-    }
-
-    /**
-     * @return {number}
-     */
-    function XOR(p, q) {
-        // 异或函数
-        var result = [0, 1, 1, 0];
-        var tmp = '' + p + q;
-        return result[parseInt(tmp, 2)]
-    }
-
     function ifSatisfy() {
-        //判断公式可满足入口
-        init();
+        /*
+        判断公式可满足入口
+        */
+        let map_parm = [];          //map, 把所有变量映射为数组中的元素
+        let map_func = [];          //map, 保存所有函数映射为数组中的元素
+        let map_constant = [];      //map, 映射常量
+        let main_stack = [];        //stack, 按顺序保存所有的运算元素
+        let parm = [];              //array, 变量数组
+        let func = [];              //array, 函数数组
+        let NumOfFunc = 0;          //number, 函数数量
+        let NumOfParm = 0;          //number, 变量数量
+
         const str_input = document.getElementById("textIn").value.toString().trim();
-        console.log(str_input);
-        var input = str_input.split('\n');      //默认输入时函数定义和逻辑表达式不在一行，且至多只有一行逻辑表达式
+        let input = str_input.split('\n');      //默认输入时函数定义和逻辑表达式不在一行，且至多只有一行逻辑表达式
 
-        //逐行进行语法检查
-        for(var count=0; count<input.length; count++){
-            var sentence = input[count];
-            console.log(sentence);
-
-            if(sentence.length === 0 || sentence[0] === '%'){   //如果语句为空或者句首为%
-                continue;
-            }else if(sentence[0] === '#'){
-                //定义函数 和 常量
-                var tmp_stack = sentence.slice(1, sentence.length).split(' ');
-                //删除临时栈中的 空格 和 空对象.
-                for(var i=tmp_stack.length-1; i>=0; i--){
-                    if(tmp_stack[i]==='' || tmp_stack[i]===' '){
-                        tmp_stack.splice(i, 1);
-                    }
-                }
-                for(var i=0; i<tmp_stack.length; i+=3){
-                    if(tmp_stack[i] === '%'){
-                        break;
-                    }else{
-                        var num_arg = parseInt(tmp_stack[i+1]);       // 2
-                        var value_func = tmp_stack[i+2];              // '0110'
-                        if(!checkname(tmp_stack[i])){
-                            output(sentence + '\n' + tmp_stack[i] + '命名错误');
-                            return;
-                        }
-                        if(i+2>=tmp_stack.length){
-                            output(sentence + '\n' + tmp_stack[i] + '定义说明不全');
-                            return;
-                        }
-                        if(!(num_arg>=0 && num_arg<=10)){
-                            output(sentence + '\n' + '函数参数数量不正确');
-                            return;
-                        }
-                        if(value_func.length !== 2**num_arg){
-                            output(sentence + '\n' + '函数值不正确');
-                            return;
-                        }
-                        for(var j=0; j<value_func.length; j++){
-                            if(value_func[j]!=='0' && value_func[j]!=='1'){
-                                output(sentence + '\n' + '函数值仅为0或1');
-                                return;
-                            }
-                        }
-                        if(tmp_stack[i] in map_func){
-                            output(sentence + '\n' + '函数重复定义');
-                            return;
-                        }
-                        if(num_arg === 0){          // 常量
-                            map_constant[tmp_stack[i]] = value_func;
-                        }
-                        // 参数无误，定义函数
-                        map_func[tmp_stack[i]] = NumOfFunc++;     // i: 'f', i+1: '2', i+2: '0110'
-                        func[NumOfFunc-1] = function () {
-                            //使用参数、值定义逻辑连接词
-                            //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
-                            var num = num_arg;
-                            var result = [];
-                            var str = '';
-                            for(var i=0; i<value_func.length; i++){
-                                result.push(value_func[i]-'0');
-                            }
-                            for(var i=0; i<num; i++){
-                                str += arguments[i];
-                            }
-                            return result[parseInt(str, 2)];    // 把二进制字符串转换为数字，映射为函数值
-                        }
-                    }
-                }
-            }else{
-                //逻辑表达式
-                //遍历字符串，检查变量名
-                sentence = sentence.replace(/\s+/g, '');    // 去除空格
-                var flag=false;     // 是否正在构建变量名
-                var tmp='';         // 保存变量名
-                for(var j=0; j<sentence.length ; j++){
-                    if(sentence[j]==='%'){
-                        break;
-                    }
-                    if(isSymbol(sentence[j])){              //遇到运算符，判断是否已经构建成变量
-                        if(flag){
-                            flag = false;
-                            if((tmp == "0") || tmp == '1' || checkname(tmp)){
-                                main_stack.push(tmp);
-                            }else{
-                                output(sentence.slice(0, j) + '?\n 命名错误')
-                                return
-                            }
-                        }
-                        main_stack.push(sentence[j]);
-                    }else if(j===sentence.length-1){        // 语句结束时，判断是否构建变量
-                        if(flag){
-                            tmp += sentence[j];
-                        }else{
-                            tmp = sentence[j];
-                        }
-                        if((tmp == "0") || tmp == '1' || checkname(tmp)){
-                            main_stack.push(tmp);
-                        }else{
-                            output(sentence.slice(0, j) + '?\n 命名错误')
-                            return
-                        }
-                    }else{                                  //正在构建变量名
-                        if(!flag){
-                            flag = true;
-                            tmp = '';
-                        }
-                        tmp += sentence[j];
-                    }
-                }
-
-                //匹配运算符，判断运算符附近是否出现错误
-                var numL = 0, numR=0; // 左括号和右括号数目
-                for(var j=0; j<main_stack.length; j++){
-                    if(!isSymbol(main_stack[j])){      //变量、函数、0、1必须和运算符挨着。 P¬ 和 )P 情况为错误
-                        if((j-1>=0 && main_stack[j-1]===')') || (j+1<main_stack.length && main_stack[j+1]==='¬')){
-                            output(sentence + '\n' + main_stack[j] + '前不能有 ) ，后不能有 ¬ ');
-                        }
-                    }else if(main_stack[j] === '('){   //左括号计数
-                        numL++;
-                    }else if(main_stack[j] === ')'){   //右括号匹配
-                        numR++;
-                        if(numR>numL){
-                            output(sentence + '\n括号不匹配');
-                            return
-                        }
-                        if(main_stack[j-1]==='('){
-                            output(sentence + '\n空括号');
-                            return
-                        }
-                    }else if(main_stack[j]==='¬'){     // !运算符后面必须是变量、函数、0、1或者括号
-                        if(j+1>=main_stack.length){
-                            output(sentence + '\n ¬ 后面不能为空')
-                            return
-                        }
-                        if(j+1<main_stack.length && isSymbol(main_stack[j+1]) && main_stack[j+1]!=='('){
-                            output(sentence + '\n ¬ 后面不能是运算符');
-                            return
-                        }
-                    }else {     //二元运算符 ∧,∨,→,⊕,↔, ','; 二元运算符前后必须是变量、常量、函数或者括号
-                        if(j-1<0 || j+1>=main_stack.length || (isSymbol(main_stack[j-1]) && main_stack[j-1]!==')') || (isSymbol(main_stack[j+1]) && main_stack[j+1]!=='(')){
-                            output(sentence + '\n' + main_stack[j] + '必须连接两个个运算元素');
-                            return;
-                        }
-                    }
-                }
-                if(numR!==numL){        //左括号多余
-                    output(sentence + '\n括号不匹配');
-                    return
-                }
-            }
+        function isSymbol(char) {
+            //判断char是否是运算符 ¬,∧,∨,→,⊕,↔, ',', (, )
+            //0, 1当特殊变量使用
+            return char==='¬' || char==='∧' || char==='∨' || char==='→' || char==='⊕' || char==='↔' || char==='(' || char===')' || char===',';
         }
-
-        //映射函数、变量 和 运算符；检查函数是否未定义
-        for(var i=0; i<main_stack.length; i++){
-            var name = main_stack[i];
-            if(!isSymbol(name)){    //判断是否是名字
-                if(i+1<main_stack.length && main_stack[i+1]==='('){         //函数名
-                    if(!(name in map_func) || !(map_func[name] in func)){   //如果函数未定义
-                        output(str_input + '\n 函数 '+ name + '未定义');
-                        return;
-                    }
-                    main_stack[i] = 'func[' + map_func[name] + ']';         //替换为函数名
-                }else {                                                     //变量名
-                    if(name in map_constant){                               //常量直接替换
-                        main_stack[i] = map_constant[name];
-                    }else{
-                        if(!(name in map_parm)){                                //如果变量第一次出现
-                            map_parm[name] = NumOfParm++;                       //映射到变量数组中
-                            parm[NumOfParm-1] = 0;                              //初始化映射变量
-                        }
-                        main_stack[i] = 'parm[' + map_parm[name] + ']';         //替换为变量名
-                    }
-                }
-            }else {
-
-                function findForwardInMain(index) {
-                    //替换 →,⊕,↔ 时，前向查找运算符前的元素的位置。 返回的是该插入元素的位置
-                    var result = index-1;
-                    if(main_stack[result]===')'){           //如果index前是括号
-                        var numL=0, numR=1;                 //解决嵌套括号
-                        for(var i = result-1; i>=0; i--){
-                            if(main_stack[i]===')'){
-                                numR++;
-                            }
-                            if(main_stack[i]==='('){
-                                numL++;
-                            }
-                            if(numL===numR){
-                                if(i-1>=0 && !isSymbol(main_stack[i-1])){   //如果运算符前向是一个函数
-                                    result = i-1;
-                                }else{
-                                    result = i;
-                                }
-                                break;
-                            }
-                        }
-                    }
-                    return result;          //插入位置在前向元素前边
-                }
-                function findBackInMain(index) {
-                    //替换 →,⊕,↔ 时，后向查找运算符前的元素的位置。 返回的是该插入元素的位置
-                    var result = index+1;
-                    if(main_stack[result]==='(' || main_stack[result+1]==='('){     //如果运算符后面是 括号 或者 函数
-                        if(main_stack[result+1]==='('){
-                            result++;
-                        }
-                        var numL = 0, numR = 0;
-                        for(var i = result; i<=main_stack.length; i++){
-                            if(main_stack[i]==='('){
-                                numL++;
-                            }
-                            if(main_stack[i]===')'){
-                                numR++;
-                            }
-                            if(numL===numR){
-                                result = i;
-                                break;
-                            }
-                        }
-                    }
-                    return result+1;       //插入位置在后向元素后面
-                }
-                switch (name) {
-                    case '¬': main_stack[i] = '!';      break;              // ¬ 替换为 ！
-                    case '∧': main_stack[i] = '&&';     break;             // ∧ 替换为 &&
-                    case '∨': main_stack[i] = '||';     break;             // ∨ 替换为 ||
-                    case '⊕':       // ⊕ 替换为函数XOR
-                            main_stack[i] = ',';                            //替换 ⊕ 为 ','
-                            var index = findForwardInMain(i);               //查找前向插入位置
-                            main_stack.splice(index, 0, 'XOR');             //插入 ’XOR'
-                            main_stack.splice(index+1, 0, '(');             //插入 '('
-                            i+=2;                                           // ⊕ 位置已经增加2
-                            index = findBackInMain(i);                      //查找后向插入位置
-                            main_stack.splice(index, 0, ')');               //插入 ')'
-                            break;
-                    case '→':       // → 替换为函数RA
-                            main_stack[i] = ',';
-                            var index = findForwardInMain(i);
-                            main_stack.splice(index, 0, 'RA');
-                            main_stack.splice(index+1, 0, '(');
-                            i+=2;
-                            index = findBackInMain(i);
-                            main_stack.splice(index, 0, ')');
-                            break;
-                    case '↔':       // ↔ 替换为函数DA()
-                            main_stack[i] = ',';
-                            var index = findForwardInMain(i);
-                            main_stack.splice(index, 0, 'DA');
-                            main_stack.splice(index+1, 0, '(');
-                            i+=2;
-                            index = findBackInMain(i);
-                            main_stack.splice(index, 0, ')');
-                            break;
-                    default: break;
-                }
-            }
-        }
-
-        //重构命令
-        for(var i = 0; i<main_stack.length; i++){
-            FinalExpr += main_stack[i];
-        }
-        console.log('FinalExpr: ' + FinalExpr);
-
-        //遍历各种可能性
         function toBinStr(num, src) {
             // 把数字src转换为长度为num的二进制字符串
-            var str = src.toString(2);
-            var tmp = num - str.length;
-            for(var i = 0; i<tmp; i++){
+            let str = src.toString(2);
+            let tmp = num - str.length;
+            for(let i = 0; i<tmp; i++){
                 str = '0'+str;
             }
             return str;
         }
         function bool2Num(src){
             //如果src是布尔变量，则转换为 0， 1
-            var tmp = src;
+            let tmp = src;
             if(src === true){
                 tmp = 1;
             }else if(src === false){
@@ -383,73 +72,481 @@
             }
             return tmp;
         }
-        var total_condition = 2 ** NumOfParm;
-        var result = [];
-        var all_true = true, all_false = true;
-        for(var i=0; i<total_condition; i++) {
-            var str = toBinStr(NumOfParm, i);
-            for(var j=0; j<NumOfParm; j++){
-                parm[j] = str[j] - '0';
-            }
-            result[i] = bool2Num(eval(FinalExpr));
-            if(result[i] === 0){
-                all_true = false;
-            }else {
-                all_false = false;
-            }
+        /**
+         * @return {number}
+         * RightArrow →
+         */
+        function RA(p, q) {
+            // → 的映射函数
+            const result = [1, 0, 1, 1];
+            let tmp = '' + p + q;
+            return result[parseInt(tmp, 2)]
+        }
+        /**
+         * @return {number}
+         * DoubleArrow ↔
+         */
+        function DA(p, q) {
+            // ↔ 的映射函数
+            const result = [1, 0, 0, 1];
+            let tmp = '' + p + q;
+            return result[parseInt(tmp, 2)]
+        }
+        /**
+         * @return {number}
+         */
+        function XOR(p, q) {
+            // 异或函数
+            var result = [0, 1, 1, 0];
+            var tmp = '' + p + q;
+            return result[parseInt(tmp, 2)]
         }
 
-        //输出真值表
-        function outResult() {
-            if(all_true){
-                output('逻辑表达式为全真');
-                return
-            }
-            if(all_false){
-                output('逻辑表达式为全假');
-                return;
-            }
-            var out_str = '';
-            for(var name in map_parm){          //第一行 : 变量名
-                out_str += (name+'\t');
-            }
-            out_str += 'RESULT\n';
-            for(var i=0; i<total_condition; i++){
-                var tmp = toBinStr(NumOfParm, i);
-                var count = 0;
-                for(var name in map_parm){
-                    var len = name.length;
-                    var mid = len/2;
-                    for(var j=0; j<mid; j++){
-                        out_str += '\t';
+        function checkSentence() {
+            /*逐行进行语法检查
+            */
+            for(let count=0; count<input.length; count++){
+
+                let sentence = input[count];
+                console.log(sentence);
+                if(sentence.length>=0 && sentence[0] === '#'){
+                    /*
+                        *定义函数 和 常量
+                        * */
+                    let tmp_stack = sentence.slice(1, sentence.length).split(' ');
+                    for(let i=tmp_stack.length-1; i>=0; i--){
+                        if(tmp_stack[i]==='' || tmp_stack[i]===' '){
+                            tmp_stack.splice(i, 1);
+                        }
                     }
-                    out_str += tmp[count++];
-                    for(var j=0; j<len-1-mid; j++) {
-                        out_str += '\t';
+                    for(let i=0; i<tmp_stack.length; i+=3){
+                        if(tmp_stack[i] === '%'){
+                            break;
+                        }else{
+                            let num_arg = parseInt(tmp_stack[i+1]);       // 2
+                            let value_func = tmp_stack[i+2];              // '0110'
+                            if(!checkName(tmp_stack[i])){
+                                output(sentence + '\n' + tmp_stack[i] + '命名错误');
+                                return false;
+                            }
+                            if(i+2>=tmp_stack.length){
+                                output(sentence + '\n' + tmp_stack[i] + '定义说明不全');
+                                return false;
+                            }
+                            if(!(num_arg>=0 && num_arg<=10)){
+                                output(sentence + '\n' + '函数参数数量不正确');
+                                return false;
+                            }
+                            if(value_func.length !== 2**num_arg){
+                                output(sentence + '\n' + '函数值不正确');
+                                return false;
+                            }
+                            for(let j=0; j<value_func.length; j++){
+                                if(value_func[j]!=='0' && value_func[j]!=='1'){
+                                    output(sentence + '\n' + '函数值仅为0或1');
+                                    return false;
+                                }
+                            }
+                            if(tmp_stack[i] in map_func){
+                                output(sentence + '\n' + '函数重复定义');
+                                return false;
+                            }
+                            if(num_arg === 0){          // 常量
+                                map_constant[tmp_stack[i]] = value_func;
+                            }
+                            // 参数无误，定义函数
+                            map_func[tmp_stack[i]] = NumOfFunc++;     // i: 'f', i+1: '2', i+2: '0110'
+                            func[NumOfFunc-1] = function () {
+                                //使用参数、值定义逻辑连接词
+                                //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
+                                let num = num_arg;
+                                let result = [];
+                                let str = '';
+                                for(let i=0; i<value_func.length; i++){
+                                    result.push(value_func[i]-'0');
+                                }
+                                for(let i=0; i<num; i++){
+                                    str += arguments[i];
+                                }
+                                return result[parseInt(str, 2)];    // 把二进制字符串转换为数字，映射为函数值
+                            }
+                        }
                     }
-                    out_str += '\t';
+                }else{
+                    /**
+                     * 逻辑表达式
+                     * 遍历字符串，检查变量名
+                     * */
+                    sentence = sentence.replace(/\s+/g, '');    // 去除空格
+                    function reName() {
+                        /**
+                         * 识别逻辑表达式中的变量名
+                         * 并保存在全局数组中
+                         * */
+                        let flag=false;     // 是否正在构建变量名
+                        let tmp='';         // 保存变量名
+                        for(let j=0; j<sentence.length ; j++){
+                            if(sentence[j]==='%'){
+                                break;
+                            }
+                            if(isSymbol(sentence[j])){              //遇到运算符，判断是否已经构建成变量
+                                if(flag){
+                                    flag = false;
+                                    if((tmp == "0") || tmp == '1' || checkName(tmp)){
+                                        main_stack.push(tmp);
+                                    }else{
+                                        output(sentence.slice(0, j) + '?\n 命名错误')
+                                        return false;
+                                    }
+                                }
+                                main_stack.push(sentence[j]);
+                            }else if(j===sentence.length-1){        // 语句结束时，判断是否构建变量
+                                if(flag){
+                                    tmp += sentence[j];
+                                }else{
+                                    tmp = sentence[j];
+                                }
+                                if((tmp == "0") || tmp == '1' || checkName(tmp)){
+                                    main_stack.push(tmp);
+                                }else{
+                                    output(sentence.slice(0, j) + '?\n 命名错误')
+                                    return false;
+                                }
+                            }else{                                  //正在构建变量名
+                                if(!flag){
+                                    flag = true;
+                                    tmp = '';
+                                }
+                                tmp += sentence[j];
+                            }
+                        }
+                        return true;
+                    }
+                    function checkSymbol() {
+                        /**
+                         * 匹配运算符，判断运算符附近是否出现错误
+                         * */
+                        let numL = 0, numR=0; // 左括号和右括号数目
+                        for(let j=0; j<main_stack.length; j++){
+                            if(!isSymbol(main_stack[j])){      //变量、函数、0、1必须和运算符挨着。 P¬ 和 )P 情况为错误
+                                if((j-1>=0 && main_stack[j-1]===')') || (j+1<main_stack.length && main_stack[j+1]==='¬')){
+                                    output(sentence + '\n' + main_stack[j] + '前不能有 ) ，后不能有 ¬ ');
+                                    return false;
+                                }
+                            }else if(main_stack[j] === '('){   //左括号计数
+                                numL++;
+                            }else if(main_stack[j] === ')'){   //右括号匹配
+                                numR++;
+                                if(numR>numL){
+                                    output(sentence + '\n括号不匹配');
+                                    return false;
+                                }
+                                if(main_stack[j-1]==='('){
+                                    output(sentence + '\n空括号');
+                                    return false;
+                                }
+                            }else if(main_stack[j]==='¬'){     // !运算符后面必须是变量、函数、0、1或者括号
+                                if(j+1>=main_stack.length){
+                                    output(sentence + '\n ¬ 后面不能为空');
+                                    return false;
+                                }
+                                if(j+1<main_stack.length && isSymbol(main_stack[j+1]) && main_stack[j+1]!=='('){
+                                    output(sentence + '\n ¬ 后面不能是运算符');
+                                    return false;
+                                }
+                            }else {     //二元运算符 ∧,∨,→,⊕,↔, ','; 二元运算符前后必须是变量、常量、函数或者括号
+                                if(j-1<0 || j+1>=main_stack.length || (isSymbol(main_stack[j-1]) && main_stack[j-1]!==')') || (isSymbol(main_stack[j+1]) && main_stack[j+1]!=='(')){
+                                    output(sentence + '\n' + main_stack[j] + '必须连接两个个运算元素');
+                                    return false;
+                                }
+                            }
+                        }
+                        if(numR!==numL){        //左括号多余
+                            output(sentence + '\n括号不匹配');
+                            return false;
+                        }
+                        return true;
+                    }
+                    if(!(reName()&&checkSymbol())){
+                        return false;
+                    }
                 }
-                out_str = out_str + '\t\t\t' + result[i] + '\n';
             }
-            output(out_str);
+            return true;
         }
-        outResult();
+
+        function reconstructSentence() {
+            /*
+            映射函数、变量 和 运算符；检查函数是否未定义
+            */
+            for(let i=0; i<main_stack.length; i++){
+                let name = main_stack[i];
+                if(!isSymbol(name)){    //判断是否是名字
+                    if(i+1<main_stack.length && main_stack[i+1]==='('){         //函数名
+                        if(!(name in map_func) || !(map_func[name] in func)){   //如果函数未定义
+                            output(str_input + '\n 函数 '+ name + '未定义');
+                            return false;
+                        }
+                        main_stack[i] = 'func[' + map_func[name] + ']';         //替换为函数名
+                    }else {                                                     //变量名
+                        if(name in map_constant){                               //常量直接替换
+                            main_stack[i] = map_constant[name];
+                        }else{
+                            if(!(name in map_parm)){                                //如果变量第一次出现
+                                map_parm[name] = NumOfParm++;                       //映射到变量数组中
+                                parm[NumOfParm-1] = 0;                              //初始化映射变量
+                            }
+                            main_stack[i] = 'parm[' + map_parm[name] + ']';         //替换为变量名
+                        }
+                    }
+                }else {
+                    let index = 0;      // 下标
+                    function findForwardInMain(index) {
+                        //替换 →,⊕,↔ 时，前向查找运算符前的元素的位置。 返回的是该插入元素的位置
+                        let result = index-1;
+                        if(main_stack[result]===')'){           //如果index前是括号
+                            let numL=0, numR=1;                 //解决嵌套括号
+                            for(let i = result-1; i>=0; i--){
+                                if(main_stack[i]===')'){
+                                    numR++;
+                                }
+                                if(main_stack[i]==='('){
+                                    numL++;
+                                }
+                                if(numL===numR){
+                                    if(i-1>=0 && !isSymbol(main_stack[i-1])){   //如果运算符前向是一个函数
+                                        result = i-1;
+                                    }else{
+                                        result = i;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        return result;          //插入位置在前向元素前边
+                    }
+                    function findBackInMain(index) {
+                        //替换 →,⊕,↔ 时，后向查找运算符前的元素的位置。 返回的是该插入元素的位置
+                        let result = index+1;
+                        if(main_stack[result]==='(' || main_stack[result+1]==='('){     //如果运算符后面是 括号 或者 函数
+                            if(main_stack[result+1]==='('){
+                                result++;
+                            }
+                            let numL = 0, numR = 0;
+                            for(let i = result; i<=main_stack.length; i++){
+                                if(main_stack[i]==='('){
+                                    numL++;
+                                }
+                                if(main_stack[i]===')'){
+                                    numR++;
+                                }
+                                if(numL===numR){
+                                    result = i;
+                                    break;
+                                }
+                            }
+                        }
+                        return result+1;       //插入位置在后向元素后面
+                    }
+                    switch (name) {
+                        case '¬': main_stack[i] = '!';      break;              // ¬ 替换为 ！
+                        case '∧': main_stack[i] = '&&';     break;             // ∧ 替换为 &&
+                        case '∨': main_stack[i] = '||';     break;             // ∨ 替换为 ||
+                        case '⊕':       // ⊕ 替换为函数XOR
+                            main_stack[i] = ',';                            //替换 ⊕ 为 ','
+                            index = findForwardInMain(i);               //查找前向插入位置
+                            main_stack.splice(index, 0, 'XOR');             //插入 ’XOR'
+                            main_stack.splice(index+1, 0, '(');             //插入 '('
+                            i+=2;                                           // ⊕ 位置已经增加2
+                            index = findBackInMain(i);                      //查找后向插入位置
+                            main_stack.splice(index, 0, ')');               //插入 ')'
+                            break;
+                        case '→':       // → 替换为函数RA
+                            main_stack[i] = ',';
+                            index = findForwardInMain(i);
+                            main_stack.splice(index, 0, 'RA');
+                            main_stack.splice(index+1, 0, '(');
+                            i+=2;
+                            index = findBackInMain(i);
+                            main_stack.splice(index, 0, ')');
+                            break;
+                        case '↔':       // ↔ 替换为函数DA()
+                            main_stack[i] = ',';
+                            index = findForwardInMain(i);
+                            main_stack.splice(index, 0, 'DA');
+                            main_stack.splice(index+1, 0, '(');
+                            i+=2;
+                            index = findBackInMain(i);
+                            main_stack.splice(index, 0, ')');
+                            break;
+                        default: break;
+                    }
+                }
+            }
+            return true;
+        }
+
+        if(checkSentence() && reconstructSentence()){
+            (function outputResult() {
+                /*
+                重构命令；求解真值表；格式化输出
+                */
+                let expr_final = main_stack.join('');    //最终JS可执行的表达式
+                let result = [];                         //真值表
+                let all_true = true, all_false = true;   //全真或全假
+                let total_condition = 2 ** NumOfParm;    //真值表行数
+                console.log('FinalExpr: ' + expr_final);
+
+                (function calResult() {
+                    /*
+                    *遍历各种可能性, 求解
+                    */
+                    for(let i=0; i<total_condition; i++) {
+                        let str = toBinStr(NumOfParm, i);
+                        for(let j=0; j<NumOfParm; j++){
+                            parm[j] = str[j] - '0';
+                        }
+                        result[i] = bool2Num(eval(expr_final));
+                        if(result[i] === 0){
+                            all_true = false;
+                        }else {
+                            all_false = false;
+                        }
+                    }
+                })();
+                (function outResult() {
+                    /*
+                    *输出真值表
+                    */
+                    if(all_true){
+                        output('逻辑表达式为全真');
+                        return
+                    }
+                    if(all_false){
+                        output('逻辑表达式为全假');
+                        return;
+                    }
+                    let out_str = '';
+                    for(let name in map_parm){          //第一行 : 变量名
+                        out_str += (name+'\t');
+                    }
+                    out_str += 'RESULT\n';
+                    for(let i=0; i<total_condition; i++){
+                        let tmp = toBinStr(NumOfParm, i);
+                        let count = 0;
+                        for(let name in map_parm){
+                            let len = name.length;
+                            let mid = len/2;
+                            for(let j=0; j<mid; j++){
+                                out_str += '\t';
+                            }
+                            out_str += tmp[count++];
+                            for(let j=0; j<len-1-mid; j++) {
+                                out_str += '\t';
+                            }
+                            out_str += '\t';
+                        }
+                        out_str = out_str + '\t\t\t' + result[i] + '\n';
+                    }
+                    output(out_str);
+                })();
+            })();
+        }
     }
-
     function ifComplete() {
-        //判断公式可满足入口
-        init();
-        const inputStr = document.getElementById("textIn").value.toString().trim();
-        console.log(inputStr);
-        var input = inputStr.split('\n');      //默认输入时函数定义和逻辑表达式不在一行，且至多只有一行逻辑表达式
-        //语法检查
-        for(var sentence in input){
-            console.log(sentence);
-            if(sentence[0] === '#'){        //只需要函数定义表达式，其他忽略
+        /*
+        判断公式可满足入口
+        */
+        let array_func = [];        //函数数组，保存定义的联结词
+        let map_func = [];          //函数map, 把函数名映射到数组中
+        let num_func = 0;           //定义的联结词数量
+        let map_expr = [];          //生成词公式map，最多有16个。把公式与其真值表联系起来。比如 1:expr表示，expr的真值表为0001
+        let num_expr = 0;           //已经生成的公式数量
 
+        const str_input = document.getElementById("textIn").value.toString().trim();
+        console.log(str_input);
+
+        function creatFunc() {
+            /**
+             * 语法检查，构建二元联结词
+             **/
+            let input = str_input.split('\n');
+            for(let count=0; count<input.length; count++){
+                let sentence = input[count];
+                if(sentence.length!==0 && sentence[0]==='#'){   // 只检查连接词定义语句
+                    /*
+                        *定义函数 和 常量
+                        * */
+                    let tmp_stack = sentence.slice(1, sentence.length).split(' ');
+                    for(let i=tmp_stack.length-1; i>=0; i--){
+                        if(tmp_stack[i]==='' || tmp_stack[i]===' '){
+                            tmp_stack.splice(i, 1);
+                        }
+                    }
+                    for(let i=0; i<tmp_stack.length; i+=3){
+                        if(tmp_stack[i] === '%'){
+                            break;
+                        }else{
+                            let num_arg = parseInt(tmp_stack[i+1]);       // 2
+                            let value_func = tmp_stack[i+2];              // '0110'
+                            if(!checkName(tmp_stack[i])){
+                                output(sentence + '\n' + tmp_stack[i] + '命名错误');
+                                return false;
+                            }
+                            if(i+2>=tmp_stack.length){
+                                output(sentence + '\n' + tmp_stack[i] + '定义说明不全');
+                                return false;
+                            }
+                            if(!(num_arg>=0 && num_arg<=10)){
+                                output(sentence + '\n' + '函数参数数量不正确');
+                                return false;
+                            }
+                            if(value_func.length !== 2**num_arg){
+                                output(sentence + '\n' + '函数值不正确');
+                                return false;
+                            }
+                            for(let j=0; j<value_func.length; j++){
+                                if(value_func[j]!=='0' && value_func[j]!=='1'){
+                                    output(sentence + '\n' + '函数值仅为0或1');
+                                    return false;
+                                }
+                            }
+                            if(tmp_stack[i] in map_func){
+                                output(sentence + '\n' + '函数重复定义');
+                                return false;
+                            }
+                            if(num_arg === 0){          // 常量跳过
+                                continue;
+                            }
+                            // 参数无误，定义函数
+                            map_func[tmp_stack[i]] = num_func++;     // i: 'f', i+1: '2', i+2: '0110'
+                            array_func[num_func-1] = function () {
+                                //使用参数、值定义逻辑连接词
+                                //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
+                                let num = num_arg;
+                                let result = [];
+                                let str = '';
+                                for(let i=0; i<value_func.length; i++){
+                                    result.push(value_func[i]-'0');
+                                }
+                                for(let i=0; i<num; i++){
+                                    str += arguments[i];
+                                }
+                                return result[parseInt(str, 2)];    // 把二进制字符串转换为数字，映射为函数值
+                            }
+                        }
+                    }
+                }
             }
+            return true;
         }
 
+        function calculate() {
+            /**
+             * 便利不同情况计算真值表
+             */
+
+        }
     }
 </script>
 </body>
