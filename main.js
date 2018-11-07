@@ -249,14 +249,74 @@ function toBinStr(num, src) {
 }
 
 
+function Person(name) {
+    let _age;
+    function setAge(n) {
+        _age = n;
+    }
+    function getAge() {
+        return _age;
+    }
 
-function f1() {
-    const num = 10;
-    let haha = num+1;
-    console.log(haha);
-    function getNum() {
-        return num;
+    return {
+        name: name,
+        getAge: getAge,
+        setAge: setAge
+    };
+}
+// let array_new = [];
+// for(let i=0;i<2; i++){
+//     let tmp = 'func['+i+'](p';
+//     for(let j=1; j<3; j++){
+//         tmp += ',p';
+//     }
+//     tmp += ')';
+//     array_new.push(tmp);
+// }
+// console.log(array_new);
+
+function bool2Num(src){
+    //如果src是布尔变量，则转换为 0， 1
+    let tmp = src;
+    if(src === true){
+        tmp = 1;
+    }else if(src === false){
+        tmp = 0;
+    }
+    return tmp;
+}
+
+function calculate(expr){
+    /**
+     * 计算expr的值
+     */
+    let result = '';
+    let p = 0, q = 0;
+    result += bool2Num(eval(expr));
+    p=0;    q=1;
+    result += bool2Num(eval(expr));
+    p=1;    q=0;
+    result += bool2Num(eval(expr));
+    p=1;    q=1;
+    result += bool2Num(eval(expr));
+    return parseInt(result, 2);
+}
+
+function formatExpr(expr) {
+    /**
+     * 还原expr中的函数名
+     * */
+    let array = expr.split('');
+    let start = expr.search('func');
+    let index = start+5;
+    while(start>=0){
+        array.splice(start, 7, 'f');
+        expr = array.join('');
+        start = expr.search('func');
+        index = start + 5;
+        console.log(expr + "  "+index);
     }
 }
-let f = f1();
-console.log(f.getNum());
+
+let expr = 'func[0](p,q) && func[1](func[0](p,p), q)'
+formatExpr(expr)
