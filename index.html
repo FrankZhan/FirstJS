@@ -8,9 +8,10 @@
 <h1>命题逻辑公式求解</h1>
 <p>制作人：裴展</p>
 
-<textarea rows="20" id="textIn" cols="100">输入逻辑表达式...</textarea>
+<label for="textIn"></label><textarea rows="20" id="textIn" cols="100">输入逻辑表达式...</textarea>
 <p></p>
 <button id="bnt1" onclick="ifSatisfy()">判断公式可满足</button>
+<p></p>
 <button id="bnt2" onclick="ifComplete()">判断完全</button>
 <p id="textOut">this is 结果</p>
 
@@ -42,6 +43,7 @@
         let main_stack = [];        //stack, 按顺序保存所有的运算元素
         let parm = [];              //array, 变量数组
         let func = [];              //array, 函数数组
+        let num_func_args = [];     //array, 保存函数对应的参数数量
         let NumOfFunc = 0;          //number, 函数数量
         let NumOfParm = 0;          //number, 变量数量
 
@@ -156,6 +158,7 @@
                             }
                             // 参数无误，定义函数
                             map_func[tmp_stack[i]] = NumOfFunc++;     // i: 'f', i+1: '2', i+2: '0110'
+                            num_func_args[NumOfFunc-1] = num_arg;     // 保存函数参数数量
                             func[NumOfFunc-1] = function () {
                                 //使用参数、值定义逻辑连接词
                                 //num: 参数数量， result: 保存值的数组， str：参数相连组成的二进制字符串
@@ -288,6 +291,27 @@
                             return false;
                         }
                         main_stack[i] = 'func[' + map_func[name] + ']';         //替换为函数名
+                        // 计算函数表达式中的逗号数量
+                        let numL = 1, numR = 0, num = 0;                        // 左括号、右括号，逗号数量
+                        for(let j=i+2; j<main_stack.length; j++){
+                            switch (main_stack[j]) {
+                                case ',':
+                                    num++;  break;
+                                case '(':
+                                    numL++; break;
+                                case ')':
+                                    numR++; break;
+                                default:
+                                    break;
+                            }
+                            if(numL === numR){
+                                break;
+                            }
+                        }
+                        if(num+1 !== num_func_args[map_func[name]]){
+                            output(str_input + '\n 函数' + name + '参数数量不对');
+                            return false;
+                        }
                     }else {                                                     //变量名
                         if(name in map_constant){                               //常量直接替换
                             main_stack[i] = map_constant[name];
@@ -574,7 +598,18 @@
                         array_pos.push(indexQ);
                     }
                 }
-                array_pos.sort();
+                array_pos.sort(function (a, b) {        //按数字大小排序
+                    return a-b;
+                });
+            }
+            function toBinStr(src) {
+                // 求真值表：把数字src转换为长度为4的二进制字符串,
+                let str = src.toString(2);
+                let tmp = 4 - str.length;
+                for(let i = 0; i<tmp; i++){
+                    str = '0'+str;
+                }
+                return str;
             }
             function bool2Num(src){
                 //如果src是布尔变量，则转换为 0， 1
@@ -620,7 +655,9 @@
                         }
                     }
                 }else{
-                    traversal(index+1);             //什么都不变遍历一遍
+                    if(traversal(index+1)){         //什么都不变遍历一遍
+                        return true;
+                    }
                     for(let i=0; i<num_new; i++){
                         stack_expr[array_pos[index]] = array_new[i];    //替换计算栈中的变量遍历一遍
                         if(traversal(index+1)){     //说明已经找到了所有公式
@@ -662,7 +699,6 @@
                     expr_func.push(tmp);
                 }
                 array_new.push('q');
-                num_new = 1;
                 
                 // 把 array_expr 初始化
                 for(let i=0; i<expr_func.length; i++){
@@ -670,11 +706,11 @@
                     array_pos = [];
                     initPos();
                     //遍历替换各种情况，找出没出现过的公式
+                    num_new = array_new.length;
                     traversal(0);
                 }
                 array_new = array_tmp;
                 array_tmp = [];
-                num_new = array_new.length;
             })();
             
             (function searchExpr() {
@@ -686,12 +722,12 @@
                         stack_expr = array_expr[i].split('');   //把表达式数组中的字符串转换为栈
                         array_pos = [];
                         initPos();
+                        num_new = array_new.length;
                         if(traversal(0)){
                             return;
                         }
                         array_new = array_tmp;
                         array_tmp = [];
-                        num_new = array_new.length;
                     }
                 }
             })();
@@ -706,8 +742,9 @@
                 }else {
                     result += '不能构成完全集，以下为构成的'+num_expr+'个公式\n';
                 }
+                result += '真值表  公式\n';
                 for(let i in map_expr){
-                    result += map_expr[i]+'\n';
+                    result += toBinStr(parseInt(i)) + '  ' +map_expr[i]+'\n';
                 }
                 output(result);
             })();
